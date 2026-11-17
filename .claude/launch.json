@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "knit-counter",
+      "runtimeExecutable": "php",
+      "runtimeArgs": ["/Users/caoimhegall/Desktop/knit-counter/artisan", "serve", "--port=8077"],
+      "port": 8077
+    }
+  ]
+}
