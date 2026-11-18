@@ -45,20 +45,34 @@
 
     {{-- Current project --}}
     <section x-show="current" class="flex flex-col gap-4">
-        <div class="flex items-center justify-between gap-3">
+        <div x-show="!editing" class="flex items-center justify-between gap-3">
             <h2 class="truncate font-display text-2xl font-medium" x-text="current?.name"></h2>
             <div class="flex shrink-0 gap-1 text-sm text-ink-soft">
-                <button type="button" @click="rename()" class="rounded-full px-3 py-1.5 hover:bg-white/60">Rename</button>
-                <button type="button" @click="remove()" class="rounded-full px-3 py-1.5 hover:bg-white/60 hover:text-[#b0567f]">Delete</button>
+                <button type="button" @click="startRename()" class="rounded-full px-3 py-1.5 hover:bg-white/60">Rename</button>
+                <button type="button" @click="remove()"
+                        class="rounded-full px-3 py-1.5 transition"
+                        :class="isArmed('delete') ? 'bg-[#b0567f] text-white' : 'hover:bg-white/60 hover:text-[#b0567f]'"
+                        x-text="isArmed('delete') ? 'Tap to delete' : 'Delete'"></button>
             </div>
         </div>
+
+        <form x-show="editing" @submit.prevent="saveRename()" class="flex gap-2">
+            <label for="rename-project" class="sr-only">Project name</label>
+            <input id="rename-project" x-ref="renameInput" x-model="editName" type="text"
+                   @keydown.escape="cancelRename()"
+                   class="pearl-input min-w-0 flex-1 rounded-2xl px-4 py-2.5 font-display text-xl">
+            <button type="submit" class="pearl-sheen pearl-plus rounded-2xl px-4 font-semibold">Save</button>
+            <button type="button" @click="cancelRename()" class="rounded-2xl px-3 text-sm text-ink-soft">Cancel</button>
+        </form>
 
         @foreach (['rows' => 'Rows', 'stitches' => 'Stitches'] as $field => $label)
             <div class="pearl-card rounded-[2rem] p-5">
                 <div class="flex items-center justify-between">
                     <h3 class="text-xs font-semibold uppercase tracking-[0.2em] text-ink-soft">{{ $label }}</h3>
                     <button type="button" @click="reset('{{ $field }}')"
-                            class="rounded-full px-3 py-1 text-xs text-ink-soft hover:bg-white/70">Reset</button>
+                            class="rounded-full px-3 py-1 text-xs transition"
+                            :class="isArmed('reset-{{ $field }}') ? 'bg-[#b0567f] text-white' : 'text-ink-soft hover:bg-white/70'"
+                            x-text="isArmed('reset-{{ $field }}') ? 'Tap again to reset' : 'Reset'"></button>
                 </div>
                 <p class="pearl-number my-2 text-center text-7xl font-medium tabular-nums leading-none py-1"
                    aria-live="polite" x-text="current?.{{ $field }} ?? 0"></p>
