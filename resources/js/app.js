@@ -21,62 +21,57 @@ Alpine.data('knitCounter', () => ({
         saveState(storage, next);
     },
 
-    // In-page "tap again to confirm" (native dialogs are blocked in some browsers).
-    armed: null,
-    armTimer: null,
-    isArmed(key) { return this.armed === key; },
-    disarm() {
-        clearTimeout(this.armTimer);
-        this.armed = null;
+    // Pearl pop-up used for Reset, Delete and Rename
+    // (native browser dialogs are blocked in some browsers and web views).
+    modal: {
+        open: false, title: '', message: '', confirmLabel: 'OK',
+        danger: false, withInput: false, value: '', onConfirm: null,
     },
-    confirmTap(key, action) {
-        if (this.armed === key) {
-            this.disarm();
-            action();
-            return;
-        }
-        this.disarm();
-        this.armed = key;
-        this.armTimer = setTimeout(() => { this.armed = null; }, 3000);
+    openModal(opts, onConfirm) {
+        this.modal = {
+            open: true, title: '', message: '', confirmLabel: 'OK',
+            danger: false, withInput: false, value: '', ...opts, onConfirm,
+        };
+        this.$nextTick(() => {
+            const el = this.modal.withInput ? this.$refs.modalInput : this.$refs.modalConfirm;
+            el?.focus();
+            if (this.modal.withInput) el?.select();
+        });
     },
-
-    // Inline rename
-    editing: false,
-    editName: '',
+    closeModal() { this.modal.open = false; },
+    confirmModal() {
+        const { onConfirm, value } = this.modal;
+        this.closeModal();
+        onConfirm?.(value);
+    },
 
     add() {
         this.commit(addProject(this.state, this.newName));
         this.newName = '';
-        this.disarm();
-        this.editing = false;
     },
-    select(id) {
-        this.commit({ ...this.state, currentId: id });
-        this.disarm();
-        this.editing = false;
+    select(id) { this.commit({ ...this.state, currentId: id }); },
+    rename() {
+        const id = this.current.id;
+        this.openModal(
+            { title: 'Rename project', confirmLabel: 'Save', withInput: true, value: this.current.name },
+            (name) => this.commit(renameProject(this.state, id, name)),
+        );
     },
-    startRename() {
-        this.disarm();
-        this.editName = this.current.name;
-        this.editing = true;
-        this.$nextTick(() => this.$refs.renameInput?.select());
-    },
-    saveRename() {
-        if (!this.editing) return;
-        this.commit(renameProject(this.state, this.current.id, this.editName));
-        this.editing = false;
-    },
-    cancelRename() { this.editing = false; },
     remove() {
-        this.confirmTap('delete', () => this.commit(deleteProject(this.state, this.current.id)));
+        const { id, name } = this.current;
+        this.openModal(
+            { title: `Delete “${name}”?`, message: 'Its row and stitch counts will be gone for good.', confirmLabel: 'Delete', danger: true },
+            () => this.commit(deleteProject(this.state, id)),
+        );
     },
-    bump(field, delta) {
-        this.disarm();
-        this.commit(bump(this.state, this.current.id, field, delta));
-    },
+    bump(field, delta) { this.commit(bump(this.state, this.current.id, field, delta)); },
     reset(field) {
         if (this.current[field] === 0) return;
-        this.confirmTap(`reset-${field}`, () => this.commit(resetCounter(this.state, this.current.id, field)));
+        const id = this.current.id;
+        this.openModal(
+            { title: `Reset ${field}?`, message: `This sets ${field} back to 0.`, confirmLabel: 'Reset', danger: true },
+            () => this.commit(resetCounter(this.state, id, field)),
+        );
     },
 }));
 

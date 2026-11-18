@@ -132,3 +132,9 @@ button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     .pearl-bg::before, .pearl-number { animation: none; }
     .pearl-plus:active::after { animation: none; }
 }
+
+/* Rose-pearl button for destructive actions in the pop-up */
+.pearl-danger {
+    color: #fff;
+    background-image: linear-gradient(120deg, #c97aa0 0%, #b0567f 45%, #9a6bb8 100%);
+}

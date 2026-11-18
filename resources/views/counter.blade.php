@@ -45,34 +45,20 @@
 
     {{-- Current project --}}
     <section x-show="current" class="flex flex-col gap-4">
-        <div x-show="!editing" class="flex items-center justify-between gap-3">
+        <div class="flex items-center justify-between gap-3">
             <h2 class="truncate font-display text-2xl font-medium" x-text="current?.name"></h2>
             <div class="flex shrink-0 gap-1 text-sm text-ink-soft">
-                <button type="button" @click="startRename()" class="rounded-full px-3 py-1.5 hover:bg-white/60">Rename</button>
-                <button type="button" @click="remove()"
-                        class="rounded-full px-3 py-1.5 transition"
-                        :class="isArmed('delete') ? 'bg-[#b0567f] text-white' : 'hover:bg-white/60 hover:text-[#b0567f]'"
-                        x-text="isArmed('delete') ? 'Tap to delete' : 'Delete'"></button>
+                <button type="button" @click="rename()" class="rounded-full px-3 py-1.5 hover:bg-white/60">Rename</button>
+                <button type="button" @click="remove()" class="rounded-full px-3 py-1.5 hover:bg-white/60 hover:text-[#b0567f]">Delete</button>
             </div>
         </div>
-
-        <form x-show="editing" @submit.prevent="saveRename()" class="flex gap-2">
-            <label for="rename-project" class="sr-only">Project name</label>
-            <input id="rename-project" x-ref="renameInput" x-model="editName" type="text"
-                   @keydown.escape="cancelRename()"
-                   class="pearl-input min-w-0 flex-1 rounded-2xl px-4 py-2.5 font-display text-xl">
-            <button type="submit" class="pearl-sheen pearl-plus rounded-2xl px-4 font-semibold">Save</button>
-            <button type="button" @click="cancelRename()" class="rounded-2xl px-3 text-sm text-ink-soft">Cancel</button>
-        </form>
 
         @foreach (['rows' => 'Rows', 'stitches' => 'Stitches'] as $field => $label)
             <div class="pearl-card rounded-[2rem] p-5">
                 <div class="flex items-center justify-between">
                     <h3 class="text-xs font-semibold uppercase tracking-[0.2em] text-ink-soft">{{ $label }}</h3>
                     <button type="button" @click="reset('{{ $field }}')"
-                            class="rounded-full px-3 py-1 text-xs transition"
-                            :class="isArmed('reset-{{ $field }}') ? 'bg-[#b0567f] text-white' : 'text-ink-soft hover:bg-white/70'"
-                            x-text="isArmed('reset-{{ $field }}') ? 'Tap again to reset' : 'Reset'"></button>
+                            class="rounded-full px-3 py-1 text-xs text-ink-soft hover:bg-white/70">Reset</button>
                 </div>
                 <p class="pearl-number my-2 text-center text-7xl font-medium tabular-nums leading-none py-1"
                    aria-live="polite" x-text="current?.{{ $field }} ?? 0"></p>
@@ -87,6 +73,40 @@
     </section>
 
     <p class="mt-auto pt-6 text-center text-xs text-ink-soft/80">Saved on this device.</p>
+
+    {{-- Pearl pop-up (Reset / Delete / Rename) --}}
+    <div x-show="modal.open" x-transition.opacity.duration.200ms
+         @keydown.escape.window="modal.open && closeModal()"
+         class="fixed inset-0 z-50 flex items-end justify-center bg-[#4a3f5c]/25 p-4 backdrop-blur-sm sm:items-center"
+         @click.self="closeModal()">
+        <form x-show="modal.open"
+              x-transition:enter="transition ease-out duration-200"
+              x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+              x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+              @submit.prevent="confirmModal()"
+              role="dialog" aria-modal="true" aria-labelledby="modal-title"
+              class="pearl-card w-full max-w-sm rounded-[2rem] p-6 text-center">
+            <h2 id="modal-title" class="font-display text-2xl font-medium" x-text="modal.title"></h2>
+            <p x-show="modal.message" class="mt-2 text-sm text-ink-soft" x-text="modal.message"></p>
+
+            <template x-if="modal.withInput">
+                <div class="mt-4">
+                    <label for="modal-input" class="sr-only">Project name</label>
+                    <input id="modal-input" x-ref="modalInput" x-model="modal.value" type="text"
+                           class="pearl-input w-full rounded-2xl px-4 py-3 text-center font-display text-xl">
+                </div>
+            </template>
+
+            <div class="mt-6 grid grid-cols-2 gap-3">
+                <button type="button" @click="closeModal()"
+                        class="pearl-minus h-14 rounded-2xl font-medium">Cancel</button>
+                <button type="submit" x-ref="modalConfirm"
+                        class="pearl-plus h-14 rounded-2xl font-semibold"
+                        :class="modal.danger ? 'pearl-danger' : 'pearl-sheen'"
+                        x-text="modal.confirmLabel"></button>
+            </div>
+        </form>
+    </div>
 </main>
 </body>
 </html>
