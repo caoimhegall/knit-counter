@@ -4,137 +4,101 @@
 @source '../../storage/framework/views/*.php';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
     --font-display: 'Fraunces', ui-serif, Georgia, serif;
+    --font-title: Didot, 'Bodoni Moda', ui-serif, Georgia, serif;
 
-    --color-ink: #4a3f5c;
-    --color-ink-soft: #8a7f9c;
-    --color-blush: #f7d6e6;
-    --color-lilac: #ddd3f7;
-    --color-mint: #cfeee6;
-    --color-sky: #d3e5f8;
-    --color-champagne: #f8ead8;
+    /* Pearl: soft grey-white fading to rose */
+    --color-ink: #4a4244;
+    --color-ink-soft: #7a6f70;
+    --color-title: #8f7f81;
+    --color-hairline: #ebe0de;
+    --color-danger: #a3666c;
 }
 
 [x-cloak] { display: none !important; }
 
 button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 
-/* ---------- Pearl background: soft drifting sheen ---------- */
+/* ---------- Background: pearl grey fading to rose ---------- */
 .pearl-bg {
-    background-color: #f8f5fb;
-    position: relative;
-    isolation: isolate;
-}
-.pearl-bg::before {
-    content: '';
-    position: fixed;
-    inset: -20%;
-    z-index: -1;
     background:
-        radial-gradient(40% 35% at 15% 10%, var(--color-blush) 0%, transparent 70%),
-        radial-gradient(45% 40% at 90% 20%, var(--color-sky) 0%, transparent 70%),
-        radial-gradient(50% 45% at 80% 85%, var(--color-mint) 0%, transparent 70%),
-        radial-gradient(45% 40% at 10% 80%, var(--color-lilac) 0%, transparent 70%),
-        radial-gradient(35% 30% at 50% 50%, var(--color-champagne) 0%, transparent 70%);
-    filter: blur(20px);
-    animation: pearl-drift 24s ease-in-out infinite alternate;
-}
-@keyframes pearl-drift {
-    from { transform: translate3d(-3%, -2%, 0) rotate(0deg); }
-    to   { transform: translate3d(3%, 2%, 0) rotate(8deg); }
+        radial-gradient(90% 60% at 70% 30%, #ffffff 0%, rgba(255, 255, 255, 0) 60%),
+        radial-gradient(140% 110% at 65% 35%, #f1f3f2 0%, #e9eaea 40%, #e9dcdb 72%, #dcc5c2 100%);
+    background-color: #ece8e7;
+    background-attachment: fixed;
+    font-variant-numeric: lining-nums;
 }
 
-/* Iridescent gradient used for borders, chips and the + button */
+/* Pearl lustre for raised buttons, active chip, Next bubble, pills */
 .pearl-sheen {
-    background-image: linear-gradient(120deg,
-        #fbe3ef 0%, #e6dcfb 25%, #d8ecf9 50%, #d9f3ec 70%, #f9ecdc 85%, #fbe3ef 100%);
-    background-size: 200% 200%;
+    background-image: radial-gradient(70% 70% at 65% 35%, #ffffff 0%, #f1f3f2 35%, #e7e9e8 60%, #e3d0ce 100%);
 }
 
-/* ---------- Glassy pearl card with iridescent rim ---------- */
+/* ---------- Card: pearly white with a soft rose rim ---------- */
 .pearl-card {
     border: 1.5px solid transparent;
     background:
-        linear-gradient(rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.55)) padding-box,
-        conic-gradient(from 200deg, #f4c9de, #d7c8f6, #bfe0f6, #c4ece0, #f5dfc2, #f4c9de) border-box;
+        radial-gradient(120% 90% at 70% 20%, rgba(255, 255, 255, 0.97) 0%, rgba(241, 243, 242, 0.92) 50%, rgba(235, 222, 221, 0.9) 100%) padding-box,
+        linear-gradient(160deg, #ffffff, #d8c3c0) border-box;
     box-shadow:
         0 1px 0 rgba(255, 255, 255, 0.9) inset,
-        0 20px 40px -20px rgba(120, 90, 160, 0.35),
-        0 4px 12px -6px rgba(120, 90, 160, 0.2);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+        0 20px 40px -20px rgba(120, 96, 96, 0.35),
+        0 4px 12px -6px rgba(120, 96, 96, 0.2);
 }
 
-/* Big shimmering count */
+/* Big count: soft rose-brown fade */
 .pearl-number {
     font-family: var(--font-display);
-    background-image: linear-gradient(115deg, #7a5fa8 0%, #c06a9b 35%, #5f8fb8 65%, #6aa79a 100%);
-    background-size: 200% 100%;
+    background-image: linear-gradient(115deg, #6e5a5c 0%, #a88584 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    animation: pearl-shimmer 8s ease-in-out infinite alternate;
+    -webkit-text-fill-color: transparent;
 }
-@keyframes pearl-shimmer {
-    from { background-position: 0% 50%; }
-    to   { background-position: 100% 50%; }
+
+/* Fraunces italic letter sits low/left; nudge it to the bubble's centre */
+.pearl-next-letter {
+    line-height: 1;
+    padding: 0 0 19px 5px;
+    box-sizing: border-box;
 }
 
 /* ---------- Buttons ---------- */
 .pearl-plus {
-    position: relative;
-    overflow: hidden;
     color: var(--color-ink);
     box-shadow:
         0 1px 0 rgba(255, 255, 255, 0.95) inset,
-        0 -2px 6px rgba(160, 130, 200, 0.15) inset,
-        0 10px 24px -12px rgba(140, 100, 180, 0.55);
+        0 -1px 3px rgba(150, 120, 118, 0.1) inset,
+        0 10px 24px -12px rgba(130, 100, 98, 0.45);
     transition: transform 120ms ease, box-shadow 120ms ease;
 }
-/* Light sweeps across the button on each tap */
-.pearl-plus::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.85) 50%, transparent 70%);
-    transform: translateX(-120%);
-}
-.pearl-plus:active::after { animation: pearl-sweep 450ms ease-out; }
-@keyframes pearl-sweep { to { transform: translateX(120%); } }
-
 .pearl-plus:active, .pearl-minus:active { transform: scale(0.97); }
 
 .pearl-minus {
     color: var(--color-ink-soft);
-    border: 1.5px solid transparent;
+    border: 1px solid transparent;
     background:
         linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8)) padding-box,
-        linear-gradient(120deg, #f2cfe1, #d9cdf5, #c9e3f5) border-box;
+        linear-gradient(135deg, #ffffff, #e8dbd9) border-box;
     transition: transform 120ms ease;
 }
 
 .pearl-input {
     border: 1.5px solid transparent;
     background:
-        linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8)) padding-box,
-        linear-gradient(120deg, #f2cfe1, #d9cdf5, #c9e3f5) border-box;
+        linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)) padding-box,
+        linear-gradient(135deg, #ffffff, #d8c3c0) border-box;
 }
 .pearl-input:focus {
     outline: none;
     background:
         linear-gradient(#fff, #fff) padding-box,
-        linear-gradient(120deg, #e59cc2, #a891e6, #86bde6) border-box;
+        linear-gradient(135deg, #e8dbd9, #b99a97) border-box;
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .pearl-bg::before, .pearl-number { animation: none; }
-    .pearl-plus:active::after { animation: none; }
-}
-
-/* Rose-pearl button for destructive actions in the pop-up */
+/* Destructive confirm in the pop-up */
 .pearl-danger {
     color: #fff;
-    background-image: linear-gradient(120deg, #c97aa0 0%, #b0567f 45%, #9a6bb8 100%);
+    background-image: linear-gradient(135deg, #b88084 0%, #a3666c 100%);
 }

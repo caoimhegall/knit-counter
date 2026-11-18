@@ -11,7 +11,6 @@ const storage = (() => {
 
 Alpine.data('knitCounter', () => ({
     state: loadState(storage),
-    newName: '',
 
     get current() {
         return this.state.projects.find((p) => p.id === this.state.currentId) ?? null;
@@ -61,12 +60,12 @@ Alpine.data('knitCounter', () => ({
     // (native browser dialogs are blocked in some browsers and web views).
     modal: {
         open: false, title: '', message: '', confirmLabel: 'OK',
-        danger: false, withInput: false, value: '', onConfirm: null,
+        danger: false, withInput: false, value: '', label: '', placeholder: '', onConfirm: null,
     },
     openModal(opts, onConfirm) {
         this.modal = {
             open: true, title: '', message: '', confirmLabel: 'OK',
-            danger: false, withInput: false, value: '', ...opts, onConfirm,
+            danger: false, withInput: false, value: '', label: '', placeholder: '', ...opts, onConfirm,
         };
         this.$nextTick(() => {
             const el = this.modal.withInput ? this.$refs.modalInput : this.$refs.modalConfirm;
@@ -81,15 +80,17 @@ Alpine.data('knitCounter', () => ({
         onConfirm?.(value);
     },
 
-    add() {
-        this.commit(addProject(this.state, this.newName));
-        this.newName = '';
+    newProject() {
+        this.openModal(
+            { title: 'New project', confirmLabel: 'Create', withInput: true, label: 'Project name', placeholder: 'e.g. Winter scarf' },
+            (name) => this.commit(addProject(this.state, name)),
+        );
     },
     select(id) { this.commit({ ...this.state, currentId: id }); },
     rename() {
         const id = this.current.id;
         this.openModal(
-            { title: 'Rename project', confirmLabel: 'Save', withInput: true, value: this.current.name },
+            { title: 'Rename project', confirmLabel: 'Save', withInput: true, label: 'Project name', value: this.current.name },
             (name) => this.commit(renameProject(this.state, id, name)),
         );
     },
