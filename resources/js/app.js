@@ -1,7 +1,8 @@
 import Alpine from 'alpinejs';
 import {
     addProject, renameProject, deleteProject, bump, resetCounter,
-    loadState, saveState,
+    loadState, saveState, setPattern, setTotalStitches,
+    parseStitches, stepForRow, nextStitch,
 } from './counter.js';
 
 const storage = (() => {
@@ -14,6 +15,41 @@ Alpine.data('knitCounter', () => ({
 
     get current() {
         return this.state.projects.find((p) => p.id === this.state.currentId) ?? null;
+    },
+
+    get currentStep() {
+        return this.current ? stepForRow(this.current.pattern, this.current.rows) : null;
+    },
+    get next() {
+        return this.current ? nextStitch(this.current.pattern, this.current.rows, this.current.stitches) : null;
+    },
+    get overTotal() {
+        const p = this.current;
+        return !!(p?.totalStitches && p.stitches > p.totalStitches);
+    },
+
+    // ---------- Pattern editor ----------
+    editor: { open: false, total: '', steps: [] },
+    openPattern() {
+        const p = this.current;
+        this.editor = {
+            open: true,
+            total: p.totalStitches ?? '',
+            steps: p.pattern.length
+                ? p.pattern.map((st) => ({ ...st }))
+                : [{ side: '', stitches: '', rows: 1 }],
+        };
+    },
+    addStep() { this.editor.steps.push({ side: '', stitches: '', rows: 1 }); },
+    removeStep(i) { this.editor.steps.splice(i, 1); },
+    stepInvalid(st) { return st.stitches.trim() !== '' && parseStitches(st.stitches) === null; },
+    get editorValid() { return !this.editor.steps.some((st) => this.stepInvalid(st)); },
+    savePattern() {
+        if (!this.editorValid) return;
+        const id = this.current.id;
+        const steps = this.editor.steps.filter((st) => st.stitches.trim() !== '');
+        this.commit(setTotalStitches(setPattern(this.state, id, steps), id, this.editor.total));
+        this.editor.open = false;
     },
 
     commit(next) {

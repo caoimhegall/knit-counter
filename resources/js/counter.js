@@ -20,6 +20,8 @@ export function addProject(state, name) {
         name: (name ?? '').trim() || 'Untitled project',
         rows: 0,
         stitches: 0,
+        pattern: [],
+        totalStitches: null,
     };
     return { projects: [...state.projects, project], currentId: project.id };
 }
@@ -39,10 +41,12 @@ export function deleteProject(state, id) {
 
 export function bump(state, id, field, delta) {
     if (!FIELDS.includes(field)) return state;
-    return updateProject(state, id, (p) => ({
-        ...p,
-        [field]: Math.max(0, p[field] + delta),
-    }));
+    return updateProject(state, id, (p) => {
+        const next = { ...p, [field]: Math.max(0, p[field] + delta) };
+        // Moving on to a new row starts the stitch count again.
+        if (field === 'rows' && next.rows > p.rows) next.stitches = 0;
+        return next;
+    });
 }
 
 export function resetCounter(state, id, field) {
@@ -50,16 +54,84 @@ export function resetCounter(state, id, field) {
     return updateProject(state, id, (p) => ({ ...p, [field]: 0 }));
 }
 
+// ---------- Stitch patterns ----------
+
+const SIDES = ['', 'RS', 'WS'];
+const MAX_REPEAT = 500;
+
+// "k1 p1" -> ['k','p'];  "k2 p2" -> ['k','k','p','p'];  invalid -> null
+export function parseStitches(text) {
+    const src = String(text ?? '').toLowerCase().replace(/,/g, ' ').trim();
+    if (!src) return null;
+    const token = /^\s*([kp])\s*(\d*)/;
+    const out = [];
+    let rest = src;
+    while (rest.trim()) {
+        const m = rest.match(token);
+        if (!m) return null;
+        const count = m[2] === '' ? 1 : Number(m[2]);
+        if (count < 1 || out.length + count > MAX_REPEAT) return null;
+        for (let i = 0; i < count; i++) out.push(m[1]);
+        rest = rest.slice(m[0].length);
+    }
+    return out;
+}
+
+const cleanStep = (step) => ({
+    side: SIDES.includes(step?.side) ? step.side : '',
+    stitches: String(step?.stitches ?? '').trim(),
+    rows: Math.max(1, Math.floor(Number(step?.rows)) || 1),
+});
+
+// Which step applies after `rowsDone` rows. Returns { index, step } or null.
+export function stepForRow(pattern, rowsDone) {
+    if (!pattern?.length) return null;
+    const cycle = pattern.reduce((n, st) => n + st.rows, 0);
+    let pos = rowsDone % cycle;
+    for (let index = 0; index < pattern.length; index++) {
+        if (pos < pattern[index].rows) return { index, step: pattern[index] };
+        pos -= pattern[index].rows;
+    }
+    return null;
+}
+
+// 'k' | 'p' | null
+export function nextStitch(pattern, rowsDone, stitchesDone) {
+    const found = stepForRow(pattern, rowsDone);
+    const seq = found && parseStitches(found.step.stitches);
+    return seq ? seq[stitchesDone % seq.length] : null;
+}
+
+export function setPattern(state, id, steps) {
+    const pattern = (steps ?? []).map(cleanStep);
+    return updateProject(state, id, (p) => ({ ...p, pattern }));
+}
+
+export function setTotalStitches(state, id, value) {
+    const n = Math.floor(Number(value));
+    const totalStitches = String(value ?? '').trim() !== '' && n > 0 ? n : null;
+    return updateProject(state, id, (p) => ({ ...p, totalStitches }));
+}
+
+// ---------- Loading ----------
+
 const isValidProject = (p) =>
     p && typeof p.id === 'string' && typeof p.name === 'string' &&
     Number.isInteger(p.rows) && p.rows >= 0 &&
     Number.isInteger(p.stitches) && p.stitches >= 0;
 
+// Fill in fields added after a project was first saved.
+const normalizeProject = (p) => ({
+    ...p,
+    pattern: Array.isArray(p.pattern) ? p.pattern.map(cleanStep) : [],
+    totalStitches: Number.isInteger(p.totalStitches) && p.totalStitches > 0 ? p.totalStitches : null,
+});
+
 export function loadState(storage) {
     try {
         const parsed = JSON.parse(storage.getItem(STORAGE_KEY));
         if (!parsed || !Array.isArray(parsed.projects)) return emptyState();
-        const projects = parsed.projects.filter(isValidProject);
+        const projects = parsed.projects.filter(isValidProject).map(normalizeProject);
         const currentId = projects.some((p) => p.id === parsed.currentId)
             ? parsed.currentId
             : (projects[0]?.id ?? null);

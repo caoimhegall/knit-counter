@@ -13,7 +13,7 @@ const memoryStorage = () => {
 test('addProject creates a project at 0/0 and makes it current', () => {
     const s = addProject(emptyState(), 'Socks');
     assert.equal(s.projects.length, 1);
-    assert.deepEqual({ ...s.projects[0], id: undefined }, { id: undefined, name: 'Socks', rows: 0, stitches: 0 });
+    assert.deepEqual({ ...s.projects[0], id: undefined }, { id: undefined, name: 'Socks', rows: 0, stitches: 0, pattern: [], totalStitches: null });
     assert.equal(s.currentId, s.projects[0].id);
 });
 
@@ -47,18 +47,11 @@ test('bump adds and subtracts, never below 0', () => {
     assert.equal(s.projects[0].stitches, 0);
 });
 
-test('adding a row does not reset stitches', () => {
-    let s = addProject(emptyState(), 'Socks');
-    const id = s.projects[0].id;
-    s = bump(bump(s, id, 'stitches', 1), id, 'rows', 1);
-    assert.equal(s.projects[0].stitches, 1);
-});
-
 test('resetCounter sets one counter to 0', () => {
     let s = addProject(emptyState(), 'Socks');
     const id = s.projects[0].id;
     s = bump(bump(s, id, 'rows', 1), id, 'stitches', 1);
-    s = resetCounter(s, id, 'rows');
+    s = resetCounter(s, id, 'rows');  // Row + then Stitch + leaves rows 1, stitches 1
     assert.equal(s.projects[0].rows, 0);
     assert.equal(s.projects[0].stitches, 1);
 });
