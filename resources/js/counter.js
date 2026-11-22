@@ -57,22 +57,46 @@ export function resetCounter(state, id, field) {
 // ---------- Stitch patterns ----------
 
 const SIDES = ['', 'RS', 'WS'];
+
+// Every stitch the pattern understands: how many it uses from the left needle,
+// how many it makes on the right, and what it's called.
+export const STITCHES = {
+    k:     { uses: 1, makes: 1, label: 'knit' },
+    p:     { uses: 1, makes: 1, label: 'purl' },
+    sl1:   { uses: 1, makes: 1, label: 'slip 1' },
+    k2tog: { uses: 2, makes: 1, label: 'knit 2 together' },
+    p2tog: { uses: 2, makes: 1, label: 'purl 2 together' },
+    ssk:   { uses: 2, makes: 1, label: 'slip, slip, knit' },
+    k3tog: { uses: 3, makes: 1, label: 'knit 3 together' },
+    sk2p:  { uses: 3, makes: 1, label: 'slip 1, k2tog, pass over' },
+    m1:    { uses: 0, makes: 1, label: 'make 1' },
+    m1l:   { uses: 0, makes: 1, label: 'make 1 left' },
+    m1r:   { uses: 0, makes: 1, label: 'make 1 right' },
+    m1p:   { uses: 0, makes: 1, label: 'make 1 purlwise' },
+    yo:    { uses: 0, makes: 1, label: 'yarn over' },
+    kfb:   { uses: 1, makes: 2, label: 'knit front & back' },
+    pfb:   { uses: 1, makes: 2, label: 'purl front & back' },
+};
+
+// Longest names first so "k2tog" isn't read as "k2" + "tog".
+const NAMES = Object.keys(STITCHES).sort((a, b) => b.length - a.length);
 const MAX_REPEAT = 500;
 
-// "k1 p1" -> ['k','p'];  "k2 p2" -> ['k','k','p','p'];  invalid -> null
+// "k2 m1r k2tog" -> ['k','k','m1r','k2tog'];  invalid -> null
 export function parseStitches(text) {
-    const src = String(text ?? '').toLowerCase().replace(/,/g, ' ').trim();
-    if (!src) return null;
-    const token = /^\s*([kp])\s*(\d*)/;
+    let rest = String(text ?? '').toLowerCase().replace(/[,\s]+/g, ' ').trim();
+    if (!rest) return null;
     const out = [];
-    let rest = src;
-    while (rest.trim()) {
-        const m = rest.match(token);
-        if (!m) return null;
-        const count = m[2] === '' ? 1 : Number(m[2]);
+    while (rest) {
+        const name = NAMES.find((n) => rest.startsWith(n));
+        if (!name) return null;
+        rest = rest.slice(name.length);
+        const m = rest.match(/^\s*(\d+)/);
+        const count = m ? Number(m[1]) : 1;
+        if (m) rest = rest.slice(m[0].length);
         if (count < 1 || out.length + count > MAX_REPEAT) return null;
-        for (let i = 0; i < count; i++) out.push(m[1]);
-        rest = rest.slice(m[0].length);
+        for (let i = 0; i < count; i++) out.push(name);
+        rest = rest.trimStart();
     }
     return out;
 }
@@ -95,11 +119,42 @@ export function stepForRow(pattern, rowsDone) {
     return null;
 }
 
-// 'k' | 'p' | null
-export function nextStitch(pattern, rowsDone, stitchesDone) {
+const rowSequence = (pattern, rowsDone) => {
     const found = stepForRow(pattern, rowsDone);
-    const seq = found && parseStitches(found.step.stitches);
+    return found ? parseStitches(found.step.stitches) : null;
+};
+
+// The stitch name to work next ('k', 'm1r', 'k2tog', …) or null.
+export function nextStitch(pattern, rowsDone, stitchesDone) {
+    const seq = rowSequence(pattern, rowsDone);
     return seq ? seq[stitchesDone % seq.length] : null;
+}
+
+// Stitches taken off the left needle after `taps` stitches worked this row.
+export function stitchesUsed(pattern, rowsDone, taps) {
+    const seq = rowSequence(pattern, rowsDone);
+    if (!seq) return taps;
+    const perRepeat = seq.reduce((n, s) => n + STITCHES[s].uses, 0);
+    let used = Math.floor(taps / seq.length) * perRepeat;
+    for (let i = 0; i < taps % seq.length; i++) used += STITCHES[seq[i]].uses;
+    return used;
+}
+
+// How many stitches you'll have once this row is worked across `total`.
+// A stitch that won't fit at the end leaves the rest counted as worked plain.
+export function rowEndCount(pattern, rowsDone, total) {
+    const seq = rowSequence(pattern, rowsDone);
+    if (!seq || !total) return null;
+    if (!seq.some((s) => STITCHES[s].uses > 0)) return null;
+    let used = 0;
+    let made = 0;
+    for (let i = 0; used < total; i++) {
+        const st = STITCHES[seq[i % seq.length]];
+        if (used + st.uses > total) break;
+        used += st.uses;
+        made += st.makes;
+    }
+    return made + (total - used);
 }
 
 export function setPattern(state, id, steps) {

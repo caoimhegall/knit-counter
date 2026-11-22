@@ -21,8 +21,9 @@ test('parseStitches accepts spaces, commas, capitals and bare letters', () => {
 test('parseStitches rejects blanks, unknown stitches and zero counts', () => {
     assert.equal(parseStitches(''), null);
     assert.equal(parseStitches('   '), null);
-    assert.equal(parseStitches('k2tog'), null);
-    assert.equal(parseStitches('yo k1'), null);
+    assert.equal(parseStitches('k2tgo'), null);
+    assert.equal(parseStitches('tog'), null);
+    assert.equal(parseStitches('xyz'), null);
     assert.equal(parseStitches('k0'), null);
 });
 

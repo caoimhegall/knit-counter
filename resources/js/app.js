@@ -2,7 +2,7 @@ import Alpine from 'alpinejs';
 import {
     addProject, renameProject, deleteProject, bump, resetCounter,
     loadState, saveState, setPattern, setTotalStitches,
-    parseStitches, stepForRow, nextStitch,
+    parseStitches, stepForRow, nextStitch, stitchesUsed, rowEndCount, STITCHES,
 } from './counter.js';
 
 const storage = (() => {
@@ -22,10 +22,22 @@ Alpine.data('knitCounter', () => ({
     get next() {
         return this.current ? nextStitch(this.current.pattern, this.current.rows, this.current.stitches) : null;
     },
+    // Stitches taken off the left needle (k2tog counts 2, m1r counts 0).
+    get used() {
+        const p = this.current;
+        return p ? stitchesUsed(p.pattern, p.rows, p.stitches) : 0;
+    },
     get overTotal() {
         const p = this.current;
-        return !!(p?.totalStitches && p.stitches > p.totalStitches);
+        return !!(p?.totalStitches && this.used > p.totalStitches);
     },
+    // Stitch count at the end of this row, when the pattern changes it.
+    get rowEnd() {
+        const p = this.current;
+        const n = p ? rowEndCount(p.pattern, p.rows, p.totalStitches) : null;
+        return n !== null && n !== p.totalStitches ? n : null;
+    },
+    get nextLabel() { return STITCHES[this.next]?.label ?? ''; },
 
     // ---------- Pattern editor ----------
     editor: { open: false, total: '', steps: [] },

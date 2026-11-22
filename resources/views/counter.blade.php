@@ -75,16 +75,18 @@
                     <div class="my-2 grid grid-cols-2 items-center py-1">
                         <div class="text-center" :class="next ? '' : 'col-span-2'">
                             <p class="pearl-number text-7xl font-medium tabular-nums leading-none"
-                               aria-live="polite" x-text="current?.stitches ?? 0"></p>
+                               aria-live="polite" x-text="used"></p>
                             <p x-show="current?.totalStitches" class="mt-1 text-sm"
                                :class="overTotal ? 'font-semibold text-danger' : 'text-ink-soft'"
                                x-text="`of ${current?.totalStitches}`"></p>
+                            <p x-show="rowEnd !== null" class="mt-0.5 text-xs text-ink-soft"
+                               x-text="`row ends with ${rowEnd}`"></p>
                         </div>
                         <div x-show="next" class="flex flex-col items-center" aria-live="polite">
                             <span class="text-xs font-semibold uppercase tracking-[0.2em] text-ink-soft">Next</span>
-                            <span class="pearl-sheen pearl-plus pearl-next-letter mt-1 flex h-16 w-16 items-center justify-center rounded-full font-display text-5xl italic !text-ink-soft"
-                                  :class="`pearl-next-${next}`"><span x-text="next"></span></span>
-                            <span class="mt-1 text-xs text-ink-soft" x-text="next === 'k' ? 'knit' : 'purl'"></span>
+                            <span class="pearl-sheen pearl-plus pearl-next-letter mt-1 flex h-16 min-w-16 items-center justify-center rounded-full px-3 font-display italic !text-ink-soft"
+                                  :class="next?.length === 1 ? `text-5xl pearl-next-${next}` : (next?.length <= 3 ? 'text-3xl' : 'text-2xl')"><span x-text="next"></span></span>
+                            <span class="mt-1 max-w-[9rem] text-center text-xs leading-tight text-ink-soft" x-text="nextLabel"></span>
                         </div>
                     </div>
                 @else
@@ -171,7 +173,7 @@
                                 <span class="text-sm text-ink-soft" x-text="st.rows == 1 ? 'row' : 'rows'"></span>
                             </div>
                             <p x-show="stepInvalid(st)" class="mt-1 text-xs text-danger">
-                                Use k and p with numbers, like k2 p2.
+                                Try stitches like k2, p2, k2tog, ssk, m1r or yo.
                             </p>
                         </div>
                     </template>
