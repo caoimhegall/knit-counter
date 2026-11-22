@@ -52,15 +52,22 @@
             <template x-if="currentStep">
                 <span class="flex min-w-0 items-baseline gap-2">
                     <span class="shrink-0 text-xs font-semibold uppercase tracking-[0.2em]"
-                          x-text="`Step ${currentStep.index + 1} of ${current.pattern.length}`"></span>
+                          x-text="`Step ${currentStep.index + 1}/${current.pattern.length}`"></span>
+                    <span x-show="current.repeats"
+                          class="shrink-0 text-xs font-semibold uppercase tracking-[0.2em] text-title"
+                          x-text="`· Repeat ${currentStep.repeat}/${current.repeats}`"></span>
                     <span x-show="currentStep.step.side"
                           class="pearl-sheen shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold text-ink-soft"
                           x-text="currentStep.step.side"></span>
                     <span class="truncate font-display text-lg text-ink" x-text="currentStep.step.stitches"></span>
                 </span>
             </template>
-            <span x-show="!currentStep" class="text-sm">+ Add a stitch pattern</span>
-            <span class="shrink-0 text-xs" x-show="currentStep">Edit</span>
+            <span x-show="done" class="flex items-baseline gap-2">
+                <span class="font-title text-lg italic text-title">Pattern done</span>
+                <span class="text-xs" x-text="`all ${current?.repeats} repeats`"></span>
+            </span>
+            <span x-show="!currentStep && !done" class="text-sm">+ Add a stitch pattern</span>
+            <span class="shrink-0 text-xs" x-show="currentStep || done">Edit</span>
         </button>
 
         @foreach (['rows' => 'Rows', 'stitches' => 'Stitches'] as $field => $label)
@@ -73,12 +80,12 @@
 
                 @if ($field === 'stitches')
                     <div class="my-2 grid grid-cols-2 items-center py-1">
-                        <div class="text-center" :class="next ? '' : 'col-span-2'">
+                        <div class="text-center" :class="next || rowDone || needsMarkers ? '' : 'col-span-2'">
                             <p class="pearl-number text-7xl font-medium tabular-nums leading-none"
                                aria-live="polite" x-text="used"></p>
-                            <p x-show="current?.totalStitches" class="mt-1 text-sm"
+                            <p x-show="needles" class="mt-1 text-sm"
                                :class="overTotal ? 'font-semibold text-danger' : 'text-ink-soft'"
-                               x-text="`of ${current?.totalStitches}`"></p>
+                               x-text="`of ${needles}`"></p>
                             <p x-show="rowEnd !== null" class="mt-0.5 text-xs text-ink-soft"
                                x-text="`row ends with ${rowEnd}`"></p>
                         </div>
@@ -87,6 +94,16 @@
                             <span class="pearl-sheen pearl-plus pearl-next-letter mt-1 flex h-16 min-w-16 items-center justify-center rounded-full px-3 font-display italic !text-ink-soft"
                                   :class="next?.length === 1 ? `text-5xl pearl-next-${next}` : (next?.length <= 3 ? 'text-3xl' : 'text-2xl')"><span x-text="next"></span></span>
                             <span class="mt-1 max-w-[9rem] text-center text-xs leading-tight text-ink-soft" x-text="nextLabel"></span>
+                            <span x-show="toGo" class="mt-0.5 text-center text-xs font-semibold text-title" x-text="toGo"></span>
+                        </div>
+                        <div x-show="rowDone" class="flex flex-col items-center text-center" aria-live="polite">
+                            <span class="font-title text-2xl italic text-title">Row done</span>
+                            <span class="mt-1 text-xs text-ink-soft">tap Rows +</span>
+                        </div>
+                        <div x-show="needsMarkers" class="flex flex-col items-center text-center">
+                            <button type="button" @click="openPattern()" class="text-xs leading-tight text-ink-soft underline decoration-hairline underline-offset-4">
+                                Add your marker counts to follow this row
+                            </button>
                         </div>
                     </div>
                 @else
@@ -132,7 +149,24 @@
                 <label class="flex items-center justify-between gap-3">
                     <span class="text-sm font-medium">Stitches on needles</span>
                     <input type="number" inputmode="numeric" min="1" x-model="editor.total" placeholder="e.g. 40"
+                           x-show="!editorMarkerTotal"
                            class="pearl-input w-28 rounded-xl px-3 py-2 text-center text-base">
+                    <span x-show="editorMarkerTotal" class="w-28 py-2 text-center font-display text-lg" x-text="editorMarkerTotal"></span>
+                </label>
+
+                <label class="flex flex-col gap-1.5">
+                    <span class="flex items-baseline justify-between gap-3">
+                        <span class="text-sm font-medium">Stitches between markers</span>
+                        <span class="text-xs text-ink-soft">optional</span>
+                    </span>
+                    <input type="text" inputmode="numeric" x-model="editor.markers" placeholder="e.g. 10 2 6 2 20 2 6 2 10"
+                           autocomplete="off" spellcheck="false"
+                           class="pearl-input w-full rounded-xl px-3 py-2 font-display text-lg"
+                           :class="markersInvalid ? 'ring-2 ring-danger/60' : ''">
+                    <span class="text-xs text-ink-soft" x-show="!markersInvalid">
+                        Counts from the start of the row (BOR) to the end, as on your needles now.
+                    </span>
+                    <span class="text-xs text-danger" x-show="markersInvalid">Use numbers with spaces, like 10 2 6 2 10.</span>
                 </label>
 
                 <div class="flex flex-col gap-3">
@@ -140,6 +174,15 @@
                         <span class="text-sm font-medium">Steps</span>
                         <span class="text-xs text-ink-soft">repeat from step 1</span>
                     </div>
+                    <label class="flex items-center justify-between gap-3">
+                        <span class="text-sm font-medium">Repeat steps</span>
+                        <span class="flex items-center gap-2">
+                            <input type="number" inputmode="numeric" min="1" x-model="editor.repeats" placeholder="∞"
+                                   aria-label="How many times to repeat the steps"
+                                   class="pearl-input w-20 rounded-xl px-3 py-2 text-center text-base">
+                            <span class="text-sm text-ink-soft" x-text="editor.repeats == 1 ? 'time' : 'times'"></span>
+                        </span>
+                    </label>
 
                     <template x-for="(st, i) in editor.steps" :key="i">
                         <div class="rounded-2xl bg-white/60 p-3 ring-1 ring-hairline">
@@ -160,20 +203,21 @@
                                             :aria-label="`Remove step ${i + 1}`">✕</button>
                                 </div>
                             </div>
-                            <div class="mt-2 flex items-center gap-2">
-                                <input type="text" x-model="st.stitches" placeholder="k1 p1"
+                            <div class="mt-2 flex items-start gap-2">
+                                <textarea x-model="st.stitches" placeholder="k1 p1"
                                        autocapitalize="off" autocomplete="off" spellcheck="false"
+                                       :rows="Math.min(6, Math.max(1, Math.ceil(st.stitches.length / 20)))"
                                        :aria-label="`Stitches for step ${i + 1}`"
-                                       class="pearl-input min-w-0 flex-1 rounded-xl px-3 py-2 font-display text-lg"
-                                       :class="stepInvalid(st) ? 'ring-2 ring-danger/60' : ''">
-                                <span class="text-sm text-ink-soft">for</span>
+                                       class="pearl-input min-w-0 flex-1 resize-none rounded-xl px-3 py-2 font-display text-lg leading-snug"
+                                       :class="stepInvalid(st) ? 'ring-2 ring-danger/60' : ''"></textarea>
+                                <span class="pt-2.5 text-sm text-ink-soft">for</span>
                                 <input type="number" inputmode="numeric" min="1" x-model.number="st.rows"
                                        :aria-label="`Rows for step ${i + 1}`"
                                        class="pearl-input w-14 rounded-xl px-2 py-2 text-center">
-                                <span class="text-sm text-ink-soft" x-text="st.rows == 1 ? 'row' : 'rows'"></span>
+                                <span class="pt-2.5 text-sm text-ink-soft" x-text="st.rows == 1 ? 'row' : 'rows'"></span>
                             </div>
                             <p x-show="stepInvalid(st)" class="mt-1 text-xs text-danger">
-                                Try stitches like k2, p2, k2tog, ssk, m1r or yo.
+                                Try k2, p2, k2tog, ssk, m1r, yo, sm, k to m, k to end or (k1 p1) x4.
                             </p>
                         </div>
                     </template>

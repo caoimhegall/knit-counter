@@ -1,9 +1,11 @@
 import Alpine from 'alpinejs';
 import {
     addProject, renameProject, deleteProject, bump, resetCounter,
-    loadState, saveState, setPattern, setTotalStitches,
-    parseStitches, stepForRow, nextStitch, stitchesUsed, rowEndCount, STITCHES,
+    loadState, saveState, setPattern, setTotalStitches, setMarkers, parseMarkers,
+    parseRow, stepForRow, stitchesUsed, patternDone, sectionsNow, planRow, tapAt, stitchLabel,
 } from './counter.js';
+
+const total = (xs) => (xs ? xs.reduce((n, x) => n + x, 0) : null);
 
 const storage = (() => {
     try { return window.localStorage ?? null; } catch { return null; }
@@ -17,35 +19,62 @@ Alpine.data('knitCounter', () => ({
     },
 
     get currentStep() {
-        return this.current ? stepForRow(this.current.pattern, this.current.rows) : null;
+        const p = this.current;
+        return p ? stepForRow(p.pattern, p.rows, p.repeats) : null;
     },
-    get next() {
-        return this.current ? nextStitch(this.current.pattern, this.current.rows, this.current.stitches) : null;
+    get done() {
+        const p = this.current;
+        return !!p && patternDone(p.pattern, p.rows, p.repeats);
     },
+    // Stitches between markers (or just [total]) at the start of this row;
+    // shaping rows already worked change them.
+    get sections() {
+        return this.current ? sectionsNow(this.current) : null;
+    },
+    get needles() { return total(this.sections); },
+    get plan() {
+        const p = this.current;
+        return p ? planRow(p.pattern, p.rows, p.repeats, this.sections) : null;
+    },
+    get tap() { return this.current ? tapAt(this.plan, this.current.stitches) : null; },
+    get next() { return this.tap?.st ?? null; },
+    get toGo() {
+        const t = this.tap;
+        if (!t?.toGo) return '';
+        return `${t.toGo} to ${t.to === 'end' ? 'end' : 'marker'}`;
+    },
+    // A marker row has a set number of taps; after the last one the row is done.
+    get rowDone() {
+        const plan = this.plan;
+        return !!(plan?.fixed && plan.taps && this.current.stitches >= plan.taps.length);
+    },
+    get needsMarkers() { return !!(this.plan?.fixed && !this.plan.taps); },
     // Stitches taken off the left needle (k2tog counts 2, m1r counts 0).
     get used() {
         const p = this.current;
-        return p ? stitchesUsed(p.pattern, p.rows, p.stitches) : 0;
+        return p ? stitchesUsed(p.pattern, p.rows, p.stitches, p.repeats, this.sections) : 0;
     },
     get overTotal() {
-        const p = this.current;
-        return !!(p?.totalStitches && this.used > p.totalStitches);
+        return !!(this.needles && this.used > this.needles);
     },
     // Stitch count at the end of this row, when the pattern changes it.
     get rowEnd() {
-        const p = this.current;
-        const n = p ? rowEndCount(p.pattern, p.rows, p.totalStitches) : null;
-        return n !== null && n !== p.totalStitches ? n : null;
+        const n = total(this.plan?.end);
+        return n !== null && n !== this.needles ? n : null;
     },
-    get nextLabel() { return STITCHES[this.next]?.label ?? ''; },
+    get nextLabel() { return stitchLabel(this.next); },
 
     // ---------- Pattern editor ----------
-    editor: { open: false, total: '', steps: [] },
+    editor: { open: false, total: '', markers: '', markersWas: '', repeats: '', steps: [] },
     openPattern() {
         const p = this.current;
+        const markers = p.markers ? this.sections.join(' ') : '';
         this.editor = {
             open: true,
-            total: p.totalStitches ?? '',
+            total: this.needles ?? '',
+            markers,
+            markersWas: markers,
+            repeats: p.repeats ?? '',
             steps: p.pattern.length
                 ? p.pattern.map((st) => ({ ...st }))
                 : [{ side: '', stitches: '', rows: 1 }],
@@ -53,13 +82,26 @@ Alpine.data('knitCounter', () => ({
     },
     addStep() { this.editor.steps.push({ side: '', stitches: '', rows: 1 }); },
     removeStep(i) { this.editor.steps.splice(i, 1); },
-    stepInvalid(st) { return st.stitches.trim() !== '' && parseStitches(st.stitches) === null; },
-    get editorValid() { return !this.editor.steps.some((st) => this.stepInvalid(st)); },
+    stepInvalid(st) { return st.stitches.trim() !== '' && parseRow(st.stitches) === null; },
+    get markersInvalid() { return parseMarkers(this.editor.markers) === undefined; },
+    get editorMarkerTotal() { return total(parseMarkers(this.editor.markers) || null); },
+    get editorValid() {
+        return !this.markersInvalid && !this.editor.steps.some((st) => this.stepInvalid(st));
+    },
     savePattern() {
         if (!this.editorValid) return;
         const id = this.current.id;
         const steps = this.editor.steps.filter((st) => st.stitches.trim() !== '');
-        this.commit(setTotalStitches(setPattern(this.state, id, steps), id, this.editor.total));
+        let next = setPattern(this.state, id, steps, this.editor.repeats);
+        // Only re-base the counts when they were changed, so Row − still
+        // walks back through earlier shaping rows.
+        const markers = parseMarkers(this.editor.markers);
+        if (this.editor.markers.trim() !== this.editor.markersWas.trim()) {
+            next = markers ? setMarkers(next, id, markers) : setTotalStitches(next, id, this.editor.total);
+        } else if (!markers && String(this.editor.total) !== String(this.needles ?? '')) {
+            next = setTotalStitches(next, id, this.editor.total);
+        }
+        this.commit(next);
         this.editor.open = false;
     },
 
