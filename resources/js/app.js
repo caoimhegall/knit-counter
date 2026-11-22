@@ -1,6 +1,6 @@
 import Alpine from 'alpinejs';
 import {
-    addProject, renameProject, deleteProject, bump, resetCounter,
+    addProject, renameProject, deleteProject, bump, resetCounter, selectProject, recentProjects,
     loadState, saveState, setPattern, setTotalStitches, setMarkers, parseMarkers,
     parseRow, stepForRow, stitchesUsed, patternDone, sectionsNow, planRow, tapAt, stitchLabel,
 } from './counter.js';
@@ -140,7 +140,19 @@ Alpine.data('knitCounter', () => ({
             (name) => this.commit(addProject(this.state, name)),
         );
     },
-    select(id) { this.commit({ ...this.state, currentId: id }); },
+    select(id) { this.commit(selectProject(this.state, id)); },
+    get recent() { return recentProjects(this.state, 3); },
+
+    // All-projects pop-up (the chip row only shows the three most recent).
+    projectsOpen: false,
+    pick(id) {
+        this.select(id);
+        this.projectsOpen = false;
+    },
+    newFromList() {
+        this.projectsOpen = false;
+        this.newProject();
+    },
     rename() {
         const id = this.current.id;
         this.openModal(

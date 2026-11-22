@@ -18,15 +18,20 @@
 
     {{-- Project picker --}}
     <section class="flex flex-col gap-3">
-        <div class="flex flex-wrap justify-center gap-2">
-            <template x-for="p in state.projects" :key="p.id">
+        {{-- Up to three recent projects; the rest live in the ⋯ list --}}
+        <div class="flex flex-nowrap items-center justify-center gap-2">
+            <template x-for="p in recent" :key="p.id">
                 <button type="button" @click="select(p.id)"
-                        class="rounded-full px-4 py-2 text-sm font-medium text-ink-soft transition"
+                        class="min-w-0 max-w-[5.75rem] truncate rounded-full px-3 py-2 text-sm font-medium text-ink-soft transition"
                         :class="p.id === state.currentId ? 'pearl-sheen pearl-plus' : 'pearl-minus'"
                         :aria-pressed="p.id === state.currentId"
+                        :title="p.name"
                         x-text="p.name"></button>
             </template>
-            <button type="button" @click="newProject()"
+            <button type="button" x-show="state.projects.length" @click="projectsOpen = true"
+                    class="pearl-minus flex size-9 shrink-0 items-center justify-center rounded-full text-lg leading-none !text-[#6a6062]"
+                    :aria-label="`All projects (${state.projects.length})`">⋯</button>
+            <button type="button" x-show="!state.projects.length" @click="newProject()"
                     class="pearl-minus rounded-full px-4 py-2 text-sm font-medium !text-[#6a6062]">+ New</button>
         </div>
     </section>
@@ -91,8 +96,8 @@
                         </div>
                         <div x-show="next" class="flex flex-col items-center" aria-live="polite">
                             <span class="text-xs font-semibold uppercase tracking-[0.2em] text-ink-soft">Next</span>
-                            <span class="pearl-sheen pearl-plus pearl-next-letter mt-1 flex h-16 min-w-16 items-center justify-center rounded-full px-3 font-display italic !text-ink-soft"
-                                  :class="next?.length === 1 ? `text-5xl pearl-next-${next}` : (next?.length <= 3 ? 'text-3xl' : 'text-2xl')"><span x-text="next"></span></span>
+                            <span class="pearl-sheen pearl-plus pearl-next-letter mt-1 flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full font-display italic !text-ink-soft"
+                                  :class="next?.length === 1 ? `text-5xl pearl-next-${next}` : (next?.length <= 3 ? 'text-2xl tracking-tight' : 'text-lg tracking-tight')"><span x-text="next"></span></span>
                             <span class="mt-1 max-w-[9rem] text-center text-xs leading-tight text-ink-soft" x-text="nextLabel"></span>
                             <span x-show="toGo" class="mt-0.5 text-center text-xs font-semibold text-title" x-text="toGo"></span>
                         </div>
@@ -235,6 +240,40 @@
                         class="pearl-sheen pearl-plus h-14 rounded-2xl font-semibold disabled:opacity-50">Save</button>
             </div>
         </form>
+    </div>
+
+    {{-- All projects --}}
+    <div x-show="projectsOpen" x-transition.opacity.duration.200ms
+         @keydown.escape.window="projectsOpen && (projectsOpen = false)"
+         class="fixed inset-0 z-40 flex items-end justify-center bg-[#4a4244]/25 p-4 backdrop-blur-sm sm:items-center"
+         @click.self="projectsOpen = false">
+        <div x-show="projectsOpen"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+             x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+             role="dialog" aria-modal="true" aria-labelledby="projects-title"
+             class="pearl-card flex max-h-[80dvh] w-full max-w-sm flex-col rounded-[2rem] p-5">
+            <h2 id="projects-title" class="text-center font-title text-2xl font-normal italic text-title">Your projects</h2>
+            <ul class="-mx-1 mt-4 flex flex-col gap-2 overflow-y-auto px-1">
+                <template x-for="p in state.projects" :key="p.id">
+                    <li>
+                        <button type="button" @click="pick(p.id)"
+                                class="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left"
+                                :class="p.id === state.currentId ? 'pearl-sheen pearl-plus' : 'pearl-minus'"
+                                :aria-current="p.id === state.currentId">
+                            <span class="min-w-0 truncate font-medium" x-text="p.name"></span>
+                            <span class="shrink-0 text-xs text-ink-soft" x-text="`row ${p.rows}`"></span>
+                        </button>
+                    </li>
+                </template>
+            </ul>
+            <button type="button" @click="newFromList()"
+                    class="mt-3 rounded-2xl border-[1.5px] border-[#e3d3d1] py-3 text-sm font-medium text-ink-soft hover:bg-white/50">
+                + New project
+            </button>
+            <button type="button" @click="projectsOpen = false"
+                    class="pearl-minus mt-3 h-12 rounded-2xl font-medium">Close</button>
+        </div>
     </div>
 
     {{-- Pearl pop-up (Reset / Delete / Rename) --}}

@@ -25,8 +25,24 @@ export function addProject(state, name) {
         markers: null,
         totalStitches: null,
         totalAtRow: 0,
+        usedAt: Date.now(),
     };
     return { projects: [...state.projects, project], currentId: project.id };
+}
+
+// Switch projects, remembering when each was last opened.
+export function selectProject(state, id, now = Date.now()) {
+    if (!state.projects.some((p) => p.id === id)) return state;
+    return { ...updateProject(state, id, (p) => ({ ...p, usedAt: now })), currentId: id };
+}
+
+// The `n` most recently opened projects (always including the current one),
+// kept in the order they were created so the chips don't jump around.
+export function recentProjects(state, n = 3) {
+    const byRecent = [...state.projects].sort((a, b) =>
+        (b.id === state.currentId) - (a.id === state.currentId) || (b.usedAt ?? 0) - (a.usedAt ?? 0));
+    const keep = new Set(byRecent.slice(0, n).map((p) => p.id));
+    return state.projects.filter((p) => keep.has(p.id));
 }
 
 export function renameProject(state, id, name) {
@@ -387,6 +403,7 @@ const normalizeProject = (p) => ({
     repeats: cleanRepeats(p.repeats),
     markers: Array.isArray(p.markers) && p.markers.length > 1 && p.markers.every((n) => Number.isInteger(n) && n >= 0) ? p.markers : null,
     totalStitches: Number.isInteger(p.totalStitches) && p.totalStitches > 0 ? p.totalStitches : null,
+    usedAt: Number.isFinite(p.usedAt) ? p.usedAt : 0,
     // Older saves: the count was entered for wherever the knitter is now.
     totalAtRow: Number.isInteger(p.totalAtRow) && p.totalAtRow >= 0 ? p.totalAtRow : p.rows,
 });

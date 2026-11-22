@@ -112,5 +112,5 @@ test('projects saved before patterns existed still load', () => {
         projects: [{ id: 'a', name: 'Old', rows: 2, stitches: 3 }], currentId: 'a',
     }) };
     const p = loadState(storage).projects[0];
-    assert.deepEqual(p, { id: 'a', name: 'Old', rows: 2, stitches: 3, pattern: [], repeats: null, markers: null, totalStitches: null, totalAtRow: 2 });
+    assert.deepEqual(p, { id: 'a', name: 'Old', rows: 2, stitches: 3, pattern: [], repeats: null, markers: null, totalStitches: null, totalAtRow: 2, usedAt: 0 });
 });

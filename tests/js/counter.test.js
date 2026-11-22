@@ -13,7 +13,7 @@ const memoryStorage = () => {
 test('addProject creates a project at 0/0 and makes it current', () => {
     const s = addProject(emptyState(), 'Socks');
     assert.equal(s.projects.length, 1);
-    assert.deepEqual({ ...s.projects[0], id: undefined }, { id: undefined, name: 'Socks', rows: 0, stitches: 0, pattern: [], repeats: null, markers: null, totalStitches: null, totalAtRow: 0 });
+    assert.deepEqual({ ...s.projects[0], id: undefined, usedAt: undefined }, { id: undefined, name: 'Socks', rows: 0, stitches: 0, pattern: [], repeats: null, markers: null, totalStitches: null, totalAtRow: 0, usedAt: undefined });
     assert.equal(s.currentId, s.projects[0].id);
 });
 
