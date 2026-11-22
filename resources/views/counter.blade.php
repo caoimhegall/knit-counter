@@ -83,7 +83,7 @@
                         <div x-show="next" class="flex flex-col items-center" aria-live="polite">
                             <span class="text-xs font-semibold uppercase tracking-[0.2em] text-ink-soft">Next</span>
                             <span class="pearl-sheen pearl-plus pearl-next-letter mt-1 flex h-16 w-16 items-center justify-center rounded-full font-display text-5xl italic !text-ink-soft"
-                                  x-text="next"></span>
+                                  :class="`pearl-next-${next}`"><span x-text="next"></span></span>
                             <span class="mt-1 text-xs text-ink-soft" x-text="next === 'k' ? 'knit' : 'purl'"></span>
                         </div>
                     </div>

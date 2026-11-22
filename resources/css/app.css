@@ -57,12 +57,15 @@ button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     -webkit-text-fill-color: transparent;
 }
 
-/* Fraunces italic letter sits low/left; nudge it to the bubble's centre */
-.pearl-next-letter {
+/* Centre each Fraunces italic letter's actual ink in the Next bubble.
+   Offsets measured from the glyph bounds at 48px (scale with font size):
+   p hangs below the baseline and leans left; k is already near centre. */
+.pearl-next-letter > span {
+    display: block;
     line-height: 1;
-    padding: 0 0 19px 5px;
-    box-sizing: border-box;
 }
+.pearl-next-p > span { transform: translate(0.05em, -0.2em); }
+.pearl-next-k > span { transform: translate(-0.013em, -0.01em); }
 
 /* ---------- Buttons ---------- */
 .pearl-plus {
