@@ -42,6 +42,10 @@ test('parseMarkers', () => {
     assert.equal(parseMarkers(''), null);
     assert.equal(parseMarkers('10 two'), undefined);
     assert.equal(parseMarkers('40'), undefined);
+    // Phone keyboards: whatever separator is easiest to reach.
+    assert.deepEqual(parseMarkers('10.2.6.2'), [10, 2, 6, 2]);
+    assert.deepEqual(parseMarkers('10-2-6/2'), [10, 2, 6, 2]);
+    assert.deepEqual(parseMarkers(' 10, 2, '), [10, 2]);
 });
 
 test('the raglan round: k to each marker, increase either side of the seams', () => {

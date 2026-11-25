@@ -8,7 +8,7 @@
     <link rel="icon" href="/favicon.ico" sizes="48x48">
     <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <link rel="manifest" href="/site.webmanifest">
+    <link rel="manifest" href="/manifest.json">
     <meta name="apple-mobile-web-app-title" content="Purl">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=fraunces:400,500,400i,500i|dm-sans:400,500,600|bodoni-moda:400i,500i" rel="stylesheet">
@@ -169,8 +169,8 @@
                         <span class="text-sm font-medium">Stitches between markers</span>
                         <span class="text-xs text-ink-soft">optional</span>
                     </span>
-                    <input type="text" inputmode="numeric" x-model="editor.markers" placeholder="e.g. 10 2 6 2 20 2 6 2 10"
-                           autocomplete="off" spellcheck="false"
+                    <input type="text" inputmode="text" enterkeyhint="done" x-model="editor.markers" placeholder="e.g. 10 2 6 2 20 2 6 2 10"
+                           autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
                            class="pearl-input w-full rounded-xl px-3 py-2 font-display text-lg"
                            :class="markersInvalid ? 'ring-2 ring-danger/60' : ''">
                     <span class="text-xs text-ink-soft" x-show="!markersInvalid">
@@ -215,7 +215,7 @@
                             </div>
                             <div class="mt-2 flex items-start gap-2">
                                 <textarea x-model="st.stitches" placeholder="k1 p1"
-                                       autocapitalize="off" autocomplete="off" spellcheck="false"
+                                       autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false"
                                        :rows="Math.min(6, Math.max(1, Math.ceil(st.stitches.length / 20)))"
                                        :aria-label="`Stitches for step ${i + 1}`"
                                        class="pearl-input min-w-0 flex-1 resize-none rounded-xl px-3 py-2 font-display text-lg leading-snug"

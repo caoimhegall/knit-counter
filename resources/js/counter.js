@@ -376,7 +376,7 @@ export function setTotalStitches(state, id, value) {
 export function parseMarkers(text) {
     const t = String(text ?? '').trim();
     if (!t) return null;
-    const parts = t.split(/[\s,]+/);
+    const parts = t.split(/[\s,.;/+-]+/).filter(Boolean);
     if (parts.length < 2 || parts.length > 41 || !parts.every((x) => /^\d+$/.test(x))) return undefined;
     const nums = parts.map(Number);
     return sum(nums) > 0 ? nums : undefined;
